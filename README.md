@@ -37,8 +37,13 @@ python image_understanding.py
 ```
 
 ### Image Generation
+image generation with detailed prompt.
 ```shell
 python image_generation.py
+```
+Polish prompt and generate images with Nexus-Gen.
+```shell
+image_generation_with_selfpolish.py
 ```
 
 ### Image Editing
