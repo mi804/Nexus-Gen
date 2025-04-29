@@ -21,9 +21,37 @@ model.eval()
 flux_decoder_path = os.path.join(model_path, 'decoder_81_512.bin') # path to trained decoder
 flux_decoder = FluxDecoder(flux_decoder_path, 'models', device='cuda:0')
 
-prompt = "A middle-aged man with a graying beard and short hair stands on a quiet urban street, wearing a black jacket. He is looking off to the side with a thoughtful expression, his arms crossed. The background features blurred buildings with warm lights and a few indistinct figures walking in the distance. The scene has a calm, contemplative atmosphere."
+prompt = "A beautiful woman, sunrise."
+extend_prompt_instruction = 'Please extend and polish the following image generation prompt: {}'
+messages = [
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": extend_prompt_instruction.format(prompt)},
+        ],
+    }
+]
+
+# Preparation for inference
+text = processor.apply_chat_template(
+    messages, tokenize=False, add_generation_prompt=True
+)
+inputs = processor(
+    text=[text],
+    padding=True,
+    return_tensors="pt",
+)
+inputs = inputs.to(model.device)
+generated_ids = model.generate(**inputs, max_new_tokens=512)
+generated_ids_trimmed = [
+    out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+]
+extended_prompt = processor.batch_decode(
+    generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+)
+
 generation_instruciton = 'Generate an image according to the following description: {}'
-prompt = generation_instruciton.format(prompt)
+prompt = generation_instruciton.format(extended_prompt[0])
 print(prompt)
 messages = [{
     "role": "user",
@@ -55,4 +83,4 @@ output_text = processor.batch_decode_all2all(generated_ids_trimmed,
 print(output_text)
 pipe_kwargs = {"negative_prompt": "", "cfg_scale": 3.0}
 image = flux_decoder.decode_image_embeds(output_image_embeddings, **pipe_kwargs)
-image.save(f'generation.png')
+image.save(f'generation_selfpolish.png')

@@ -20,7 +20,7 @@ processor = Qwen2_5_VLProcessor.from_pretrained(model_path)
 model.eval()
 
 flux_decoder_path = os.path.join(model_path, 'decoder_81_512.bin') # path to trained decoder
-flux_decoder = FluxDecoder(flux_decoder_path, 't2i_models', device='cuda:0')
+flux_decoder = FluxDecoder(flux_decoder_path, 'models', device='cuda:0')
 
 max_pixels = 262640
 gen_size = 512
