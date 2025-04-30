@@ -7,7 +7,6 @@ from modeling.ar.processing_qwen2_5_vl import Qwen2_5_VLProcessor
 
 
 model_path = 'models/Nexus-Gen'
-model_path = '/mnt/nas1/zhanghong/project/all2all/modelscope/Nexus-Gen'
 model_config = AutoConfig.from_pretrained(model_path)
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_path,
