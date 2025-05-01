@@ -63,7 +63,7 @@ Nexus-Gen is trained base on [ms-swift](https://github.com/modelscope/ms-swift.g
 
 ### Citation
 ```
-@article{liu2025step1x-edit,
+@article{zhang2025nexus-gen,
       title={Nexus-Gen: A Unified Model for Image Understanding, Generation, and Editing}, 
       author={Hong Zhang and Zhongjie Duan and Xingjun Wang and Yingda Chen and Yuze Zhao and Yu Zhang},
       journal={arXiv preprint arXiv:2504.21356},
