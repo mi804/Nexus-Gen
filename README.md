@@ -1,9 +1,16 @@
 <h1 align="center">Nexus-Gen: A Unified Model for Image Understanding, Generation, and Editing</h1>
+ 
+<div align="center">
+
+  <a href="http://arxiv.org/abs/2504.21356"><img src="https://img.shields.io/static/v1?label=Tech%20Report&message=Arxiv&color=red"></a> &ensp;
+  <a href="https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Model&message=ModelScope&color=blue"></a> &ensp;
+  <a href="https://huggingface.co/modelscope/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Model&message=HuggingFace&color=yellow"></a> &ensp;
+</div>
 
 ## TODO
 - [x] Release the train and inference code.
 - [x] Release the model checkpoint.
-- [ ] Release the technical report.
+- [x] Release the technical report.
 - [ ] Release the training datasets.
 
 ## What is Nexus-Gen
@@ -55,7 +62,11 @@ python image_editing.py
 Nexus-Gen is trained base on [ms-swift](https://github.com/modelscope/ms-swift.git) and [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio.git). You can find the training scripts in `train/scripts/train_decoder.sh` and `train_llm.sh`.
 
 ### Citation
-To cite the paper and model, please use the below:
 ```
-
+@article{liu2025step1x-edit,
+      title={Nexus-Gen: A Unified Model for Image Understanding, Generation, and Editing}, 
+      author={Hong Zhang and Zhongjie Duan and Xingjun Wang and Yingda Chen and Yuze Zhao and Yu Zhang},
+      journal={arXiv preprint arXiv:2504.21356},
+      year={2025}
+}
 ```
