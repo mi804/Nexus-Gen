@@ -88,29 +88,22 @@ pipe_kwargs = {"negative_prompt": "", "cfg_scale": 3.0}
 image = flux_decoder.decode_image_embeds(output_image_embeddings, **pipe_kwargs, height=gen_size, width=gen_size)
 image.save(f'editing_r1.png')
 
-assistance_message = [{
-    "role": "assistant",
-    "content": [{
-        "type": "text",
-        "text": output_text[0].replace('<image>', '<|vision_start|><|image_pad|><|vision_end|>')
-    },],
-}]
-
-messages += assistance_message
-
 # second turn
-messages += [{
-    "role": "user",
-    "content": [{
-        "type": "text",
-        "text": "Add a sun in the sky."
-    },],
-}]
+instruction = "<image> Add a sun in the sky." # <image> is a placeholder for the image
+instruction = instruction.replace('<image>', '<|vision_start|><|image_pad|><|vision_end|>')
+messages = [
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": instruction},
+        ],
+    }
+]
 
 text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 inputs = processor(
     text=[text],
-    images=images+[image],
+    images=[image],
     padding=True,
     return_tensors="pt",
 )
