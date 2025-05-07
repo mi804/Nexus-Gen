@@ -1,6 +1,11 @@
 from transformers import AutoConfig, AutoTokenizer
 import os
 import torch
+import sys
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
 from modeling.decoder.flux_decoder import FluxDecoder
 from modeling.ar.modeling_qwen2_5_vl import Qwen2_5_VLForConditionalGeneration
 from modeling.ar.processing_qwen2_5_vl import Qwen2_5_VLProcessor
@@ -20,6 +25,7 @@ model.eval()
 flux_decoder_path = os.path.join(model_path, 'decoder_81_512.bin') # path to trained decoder
 flux_decoder = FluxDecoder(flux_decoder_path, 'models', device='cuda:0')
 
+# image generation
 prompt = "A middle-aged man with a graying beard and short hair stands on a quiet urban street, wearing a black jacket. He is looking off to the side with a thoughtful expression, his arms crossed. The background features blurred buildings with warm lights and a few indistinct figures walking in the distance. The scene has a calm, contemplative atmosphere."
 generation_instruciton = 'Generate an image according to the following description: {}'
 prompt = generation_instruciton.format(prompt)
