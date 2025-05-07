@@ -58,6 +58,11 @@ image_generation_with_selfpolish.py
 python image_editing.py
 ```
 
+### Gradio demo
+```shell
+python app.py
+```
+
 ### Training Codes
 Nexus-Gen is trained base on [ms-swift](https://github.com/modelscope/ms-swift.git) and [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio.git). You can find the training scripts in `train/scripts/train_decoder.sh` and `train_llm.sh`.
 
