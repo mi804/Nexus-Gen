@@ -1,7 +1,28 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from qwen_vl_utils import vision_process
+from swift.utils import get_env_args
 from swift.llm import Model, ModelGroup, ModelArch, ModelMeta, get_model_tokenizer_multimodal, register_model
-from swift.llm.model.model.qwen import patch_qwen_vl_utils
 from swift.llm.model.patcher import patch_output_clone, patch_output_to_input_device
+
+
+def patch_qwen_vl_utils(vision_process):
+    if hasattr(vision_process, '_patch'):
+        return
+    for key in [
+            'image_factor', 'min_pixels', 'max_pixels', 'max_ratio', 'video_min_pixels', 'video_max_pixels',
+            'video_total_pixels', 'frame_factor', 'fps', 'fps_min_frames', 'fps_max_frames'
+    ]:
+        type_func = float if key == 'fps' else int
+        setattr(vision_process, key.upper(), get_env_args(key, type_func, getattr(vision_process, key.upper())))
+    _read_video_decord = vision_process._read_video_decord
+
+    def _new_read_video_decord(ele: dict):
+        from swift.llm import load_file
+        ele['video'] = load_file(ele['video'])
+        return _read_video_decord(ele)
+
+    vision_process.VIDEO_READER_BACKENDS['decord'] = _new_read_video_decord
+    vision_process._patch = True
 
 
 def get_model_tokenizer_qwen2_5_all2all(*args, **kwargs):
@@ -21,7 +42,7 @@ def get_model_tokenizer_qwen2_5_all2all(*args, **kwargs):
         patch_output_clone(model.model.embed_tokens)
         patch_output_to_input_device(model.model.embed_tokens)
 
-    patch_qwen_vl_utils()
+    patch_qwen_vl_utils(vision_process)
     return model, tokenizer
 
 

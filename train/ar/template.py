@@ -37,12 +37,10 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
         label_list = []
         for msg in messages:
             content = msg.get('content', '')
-            # 统计当前消息中的图像标记数量
             if content is None:
                 continue
             image_count = content.count('<image>')
             if image_count > 0:
-                # 为每个图像标记添加对应的role
                 label_list.extend([msg['role']] * image_count)
         return label_list
 
@@ -185,5 +183,4 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
 register_template(
     QwenTemplateMeta(
         template_type='qwenall2all_custom',
-        template_cls=Qwen2_5VL_All2AllTemplate,
-        placeholder_tokens=['<|image_pad|>', '<|video_pad|>']))
+        template_cls=Qwen2_5VL_All2AllTemplate,))
