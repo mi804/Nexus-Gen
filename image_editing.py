@@ -1,4 +1,4 @@
-from transformers import AutoConfig, AutoTokenizer
+from transformers import AutoConfig
 from qwen_vl_utils import smart_resize
 import os
 import torch
@@ -10,7 +10,6 @@ from modeling.ar.processing_qwen2_5_vl import Qwen2_5_VLProcessor
 
 model_path = 'models/Nexus-Gen'
 model_config = AutoConfig.from_pretrained(model_path)
-tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_path,
                                                            config=model_config,
                                                            trust_remote_code=True,
@@ -60,6 +59,7 @@ inputs = processor(
     return_tensors="pt",
 )
 inputs = inputs.to(model.device)
+# [[1, 18, 18]] for 81 image tokens
 generation_image_grid_thw = torch.tensor([[1, 18, 18]]).to('cuda:0')
 with torch.no_grad():
     outputs = model.generate(**inputs,

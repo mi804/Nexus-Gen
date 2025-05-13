@@ -1,6 +1,21 @@
 import torch
 from diffsynth import ModelManager
+from diffsynth.models.utils import load_state_dict
+from diffsynth.models.flux_dit import FluxDiT
 from .flux_image_pipeline import FluxImagePipelineAll2All
+
+
+class FluxDiTStateDictConverter:
+    def __init__(self):
+        pass
+
+    def from_diffusers(self, state_dict):
+        return state_dict
+
+
+def state_dict_converter():
+    return FluxDiTStateDictConverter()
+
 
 class FluxDecoder:
 
@@ -15,10 +30,10 @@ class FluxDecoder:
             f"{flux_path}/FLUX/FLUX.1-dev/text_encoder/model.safetensors",
             f"{flux_path}/FLUX/FLUX.1-dev/text_encoder_2",
             f"{flux_path}/FLUX/FLUX.1-dev/ae.safetensors",
-            f"{flux_path}/FLUX/FLUX.1-dev/flux1-dev.safetensors"
         ])
 
-        state_dict = torch.load(flux_all2all_modelpath, weights_only=True, map_location='cpu')
+        state_dict = load_state_dict(flux_all2all_modelpath)
+
         adapter_states = ['0.weight', '0.bias', '1.weight', '1.bias', '3.weight', '3.bias', '4.weight', '4.bias']
         adapter_state_dict = {}
         for key in adapter_states:
@@ -33,6 +48,9 @@ class FluxDecoder:
                                       torch.nn.LayerNorm(out_channel))
         adapter.load_state_dict(adapter_state_dict)
         adapter.to(device, dtype=torch_dtype)
+
+        FluxDiT.state_dict_converter = staticmethod(state_dict_converter)
+        model_manager.load_model_from_single_file(flux_all2all_modelpath, state_dict=state_dict, model_names=['flux_dit'], model_classes=[FluxDiT], model_resource='diffusers')
 
         pipe = FluxImagePipelineAll2All.from_model_manager(model_manager)
         pipe.dit.load_state_dict(state_dict)

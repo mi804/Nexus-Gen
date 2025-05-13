@@ -2,6 +2,7 @@ import gradio as gr
 import torch
 from PIL import Image
 import os
+import random
 from transformers import AutoConfig, AutoTokenizer
 from qwen_vl_utils import process_vision_info, smart_resize
 from modeling.decoder.flux_decoder import FluxDecoder
@@ -28,7 +29,7 @@ flux_decoder_path = os.path.join(model_path, 'decoder_81_512.bin')
 flux_decoder = FluxDecoder(flux_decoder_path, 'models', device='cuda:0')
 
 # Define system prompt
-SYSTEM_PROMPT = "You are Nexus-Gen, is a unified model that synergizes the language reasoning capabilities of LLMs with the image synthesis power of diffusion models."
+SYSTEM_PROMPT = "You are a helpful assistant."
 
 def image_understanding(image, question):
     """Multimodal Q&A function - supports both visual and text Q&A"""
@@ -144,7 +145,8 @@ def image_generation(prompt):
             output_image_embeddings = outputs.output_image_embeddings
     
     pipe_kwargs = {"negative_prompt": "", "cfg_scale": 3.0}
-    image = flux_decoder.decode_image_embeds(output_image_embeddings, **pipe_kwargs)
+    seed = random.randint(0, 10000)
+    image = flux_decoder.decode_image_embeds(output_image_embeddings, seed=seed, **pipe_kwargs)
     return image
 
 def image_generation_with_polish(prompt):
@@ -231,7 +233,7 @@ def image_editing(image, instruction):
 # Create Gradio interface
 with gr.Blocks(title="Nexus-Gen Demo") as demo:
     gr.Markdown("# Nexus-Gen Demo")
-    
+    gr.Markdown("### Please note that Nexus-Gen is trained primarily with English corpus, therefore instruction-following with non-English is not supported.")
     with gr.Tab("Multimodal Q&A"):
         with gr.Row():
             with gr.Column():
@@ -331,5 +333,5 @@ with gr.Blocks(title="Nexus-Gen Demo") as demo:
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
-        server_port=7860
+        server_port=7861
     )
