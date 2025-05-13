@@ -10,7 +10,7 @@
   <a href="http://arxiv.org/abs/2504.21356"><img src="https://img.shields.io/static/v1?label=Tech%20Report&message=Arxiv&color=red"></a> &ensp;
   <a href="https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Model&message=ModelScope&color=blue"></a> &ensp;
   <a href="https://huggingface.co/modelscope/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Model&message=HuggingFace&color=yellow"></a> &ensp;
-  <a href="https://www.modelscope.cn/studios/DiffSynth-Studio/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Online Demo&message=ModeScope&color=green"></a> &ensp;
+  <a href="https://www.modelscope.cn/studios/DiffSynth-Studio/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Online%20Demo&message=ModeScope&color=green"></a> &ensp;
 
 </div>
 
