@@ -1,3 +1,8 @@
+<p align="center">
+    <br>
+    <img src="assets/logo.jpg"/>
+    <br>
+<p>
 <h1 align="center">Nexus-Gen: A Unified Model for Image Understanding, Generation, and Editing</h1>
  
 <div align="center">
