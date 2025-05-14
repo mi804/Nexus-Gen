@@ -18,9 +18,6 @@ model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_path,
 processor = Qwen2_5_VLProcessor.from_pretrained(model_path)
 model.eval()
 
-flux_decoder_path = os.path.join(model_path, 'decoder_81_512.bin') # path to trained decoder
-flux_decoder = FluxDecoder(flux_decoder_path, 'models', device='cuda:0')
-
 max_pixels = 262640
 gen_size = 512
 
@@ -76,6 +73,10 @@ output_text = processor.batch_decode_all2all(
     generated_ids_trimmed, skip_special_tokens=False, clean_up_tokenization_spaces=False
 )
 print(output_text)
+model.cpu()
+
+flux_decoder_path = os.path.join(model_path, 'decoder_81_512.bin') # path to trained decoder
+flux_decoder = FluxDecoder(flux_decoder_path, 'models', device='cuda:0')
 
 pipe_kwargs = {"negative_prompt": "", "cfg_scale": 3.0}
 image = flux_decoder.decode_image_embeds(output_image_embeddings, **pipe_kwargs, height=gen_size, width=gen_size)

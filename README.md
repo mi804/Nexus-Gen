@@ -51,7 +51,7 @@ python image_understanding.py
 ```
 
 ### Image Generation
-image generation with detailed prompt.
+Image generation with detailed prompt. (Needs at least 37 GB VRAM)
 ```shell
 python image_generation.py
 ```
@@ -59,7 +59,10 @@ Polish prompt and generate images with Nexus-Gen.
 ```shell
 image_generation_with_selfpolish.py
 ```
-
+Image generation with less VRAM by cpu offload. (Needs at least 24 GB VRAM)
+```shell
+python image_generation_offload.py
+```
 ### Image Editing
 ```shell
 python image_editing.py

@@ -19,13 +19,17 @@ def state_dict_converter():
 
 class FluxDecoder:
 
-    def __init__(self, flux_all2all_modelpath, flux_path, device='cuda', torch_dtype=torch.bfloat16):
+    def __init__(self, flux_all2all_modelpath, flux_path, device='cuda', torch_dtype=torch.bfloat16, enable_cpu_offload=False):
         self.device = device
         self.torch_dtype = torch_dtype
+        self.enable_cpu_offload = enable_cpu_offload
         self.pipe, self.adapter = self.get_pipe(flux_all2all_modelpath, flux_path, device, torch_dtype)
 
     def get_pipe(self, flux_all2all_modelpath, flux_path, device="cuda", torch_dtype=torch.bfloat16):
-        model_manager = ModelManager(torch_dtype=torch_dtype, device=device)
+        if self.enable_cpu_offload:
+            model_manager = ModelManager(torch_dtype=torch_dtype, device='cpu')
+        else:
+            model_manager = ModelManager(torch_dtype=torch_dtype, device=device)
         model_manager.load_models([
             f"{flux_path}/FLUX/FLUX.1-dev/text_encoder/model.safetensors",
             f"{flux_path}/FLUX/FLUX.1-dev/text_encoder_2",
@@ -52,8 +56,10 @@ class FluxDecoder:
         FluxDiT.state_dict_converter = staticmethod(state_dict_converter)
         model_manager.load_model_from_single_file(flux_all2all_modelpath, state_dict=state_dict, model_names=['flux_dit'], model_classes=[FluxDiT], model_resource='diffusers')
 
-        pipe = FluxImagePipelineAll2All.from_model_manager(model_manager)
+        pipe = FluxImagePipelineAll2All.from_model_manager(model_manager, device=device)
         pipe.dit.load_state_dict(state_dict)
+        if self.enable_cpu_offload:
+            pipe.enable_cpu_offload()
 
         return pipe, adapter
 

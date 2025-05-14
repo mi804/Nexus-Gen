@@ -1,11 +1,10 @@
-from transformers import AutoConfig, AutoTokenizer
+from transformers import AutoConfig
 from qwen_vl_utils import process_vision_info
 from modeling.ar.modeling_qwen2_5_vl import Qwen2_5_VLForConditionalGeneration
 from modeling.ar.processing_qwen2_5_vl import Qwen2_5_VLProcessor
 
 model_path = 'models/Nexus-Gen'
 model_config = AutoConfig.from_pretrained(model_path)
-tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_path,
                                                            config=model_config,
                                                            trust_remote_code=True,

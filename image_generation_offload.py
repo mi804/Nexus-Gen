@@ -51,12 +51,9 @@ output_text = processor.batch_decode_all2all(generated_ids_trimmed,
 print(output_text)
 model.cpu()
 
-pipe_kwargs = {"negative_prompt": "", "cfg_scale": 3.0}
-
 flux_decoder_path = os.path.join(model_path, 'decoder_81_512.bin') # path to trained decoder
-flux_decoder = FluxDecoder(flux_decoder_path, 'models', device='cuda:0')
+flux_decoder = FluxDecoder(flux_decoder_path, 'models', device='cuda:0', enable_cpu_offload=True)
 
+pipe_kwargs = {"negative_prompt": "", "cfg_scale": 3.0}
 image = flux_decoder.decode_image_embeds(output_image_embeddings, **pipe_kwargs)
-peak_memory = torch.cuda.max_memory_allocated(device='cuda:0')
-print(f"Peak memory usage: {peak_memory / (1024 ** 3):.2f} GB")
 image.save(f'generation.png')
