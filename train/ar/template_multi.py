@@ -162,6 +162,17 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
                     # exclude image embeddings from input embeddings
                     image_embeds_labels = expanded_image_embeds.masked_select(excluded_mask).view(-1, image_embeds.size(-1))
                     input_dict.update({'image_embeddings': image_embeds_labels.clone().detach()}) # TODO: may not need detach
+                    # get prefill image embeddings
+                    num_embeddings = model.image_prefill_embeds.num_embeddings
+                    image_prefill_embeds = model.image_prefill_embeds(
+                        torch.arange(num_embeddings, device=inputs_embeds.device).long()
+                    )
+                    num_repeats = image_embeds_labels.size(0) // num_embeddings
+                    image_prefill_embeds = image_prefill_embeds.repeat(num_repeats, 1)
+                    assert image_prefill_embeds.size(0) == image_embeds_labels.size(0)
+                    # replace output image embeddings with prefill image embeddings
+                    inputs_embeds.masked_scatter_(excluded_mask, image_prefill_embeds)
+                    # replace input image embeddings with image embeddings
                     inputs_embeds = inputs_embeds * (1 - image_mask) + expanded_image_embeds * image_mask
                 else:
                     inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)

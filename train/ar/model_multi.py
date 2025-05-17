@@ -27,7 +27,7 @@ def patch_qwen_vl_utils(vision_process):
 
 def get_model_tokenizer_qwen2_5_all2all(*args, **kwargs):
     import os
-    from modeling.ar.modeling_qwen2_5_vl import Qwen2_5_VLForConditionalGeneration
+    from modeling.ar.modeling_qwen2_5_vl_multi import Qwen2_5_VLForConditionalGeneration
 
     height = int(os.environ.get('IMAGE_TRAIN_SIZE', 252))
     print(f'IMAGE_TRAIN_SIZE {height}')
