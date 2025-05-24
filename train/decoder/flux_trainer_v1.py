@@ -77,10 +77,10 @@ class FluxForQwen(pl.LightningModule):
         self.pipe.eval()
         self.pipe.denoising_model().requires_grad_(True)
         self.pipe.denoising_model().train()
-        self.adapter.requires_grad_(True)
-        self.adapter.train()
         self.global_adapter.requires_grad_(True)
         self.global_adapter.train()
+        self.adapter.requires_grad_(True)
+        self.adapter.train()
 
 
     def training_step(self, batch, batch_idx):
@@ -129,6 +129,7 @@ class FluxForQwen(pl.LightningModule):
         import itertools
         trainable_modules = itertools.chain(
             self.adapter.parameters(),
+            self.global_adapter.parameters(),
             self.pipe.denoising_model().parameters()
         )
         optimizer = torch.optim.AdamW(trainable_modules, lr=self.learning_rate)
@@ -160,12 +161,19 @@ class FluxForQwen(pl.LightningModule):
     def on_save_checkpoint(self, checkpoint):
         checkpoint.clear()
 
-        save_state_dict = self.adapter.state_dict()
         state_dict = self.pipe.denoising_model().state_dict()
-        save_state_dict.update(state_dict)
+        
+        global_adapter_state_dict = self.global_adapter.state_dict()
+        global_prefix = 'global_adapter'
+        global_adapter_state_dict = {f"{global_prefix}.{key}": value for key, value in global_adapter_state_dict.items()}
+        state_dict.update(global_adapter_state_dict)
 
-        checkpoint.update(save_state_dict)
+        adapter_state_dict = self.adapter.state_dict()
+        adapter_prefix = 'adapter'
+        adapter_state_dict = {f"{adapter_prefix}.{key}": value for key, value in adapter_state_dict.items()}
+        state_dict.update(adapter_state_dict)
 
+        checkpoint.update(state_dict)
 
 
 def add_general_parsers(parser):

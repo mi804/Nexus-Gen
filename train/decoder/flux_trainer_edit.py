@@ -110,7 +110,6 @@ class FluxForQwen(pl.LightningModule):
         noisy_latents = self.pipe.scheduler.add_noise(latents, noise, timestep)
         training_target = self.pipe.scheduler.training_target(latents, noise, timestep)
 
-        # do 
         all_latents = torch.concat([noisy_latents, ref_latents], dim=-2)
         ref_image_ids = self.pipe.denoising_model().prepare_image_ids(ref_latents)
         extra_input['image_ids'] = torch.concat([extra_input['image_ids'], ref_image_ids], dim=-2)
@@ -136,10 +135,11 @@ class FluxForQwen(pl.LightningModule):
         import itertools
         trainable_modules = itertools.chain(
             self.adapter.parameters(),
+            self.global_adapter.parameters(),
             self.pipe.denoising_model().parameters()
         )
         optimizer = torch.optim.AdamW(trainable_modules, lr=self.learning_rate)
-    
+
         total_steps = self.trainer.estimated_stepping_batches
         warmup_steps = self.lr_warmup_steps
         print('total_steps:', total_steps)
@@ -167,11 +167,17 @@ class FluxForQwen(pl.LightningModule):
     def on_save_checkpoint(self, checkpoint):
         checkpoint.clear()
 
-        save_state_dict = self.adapter.state_dict()
-        state_dict = self.pipe.denoising_model().state_dict()
-        save_state_dict.update(state_dict)
+        checkpoint.update(self.pipe.denoising_model().state_dict())
 
-        checkpoint.update(save_state_dict)
+        global_adapter_state_dict = self.global_adapter.state_dict()
+        global_prefix = 'global_adapter'
+        global_adapter_state_dict = {f"{global_prefix}.{key}": value for key, value in global_adapter_state_dict.items()}
+        checkpoint.update(global_adapter_state_dict)
+
+        adapter_state_dict = self.adapter.state_dict()
+        adapter_prefix = 'adapter'
+        adapter_state_dict = {f"{adapter_prefix}.{key}": value for key, value in adapter_state_dict.items()}
+        checkpoint.update(adapter_state_dict)
 
 
 
@@ -328,7 +334,7 @@ def launch_training_task(model, args):
         num_workers=args.dataloader_num_workers
     )
     # train
-    if args.use_wandb:        
+    if args.use_wandb:
         from pytorch_lightning.loggers import WandbLogger
 
         wandb_config = {"UPPERFRAMEWORK": "DiffSynth-Studio"}
@@ -341,7 +347,7 @@ def launch_training_task(model, args):
             config=wandb_config,
             save_dir=os.path.join(args.output_path, "wandb")
         )
-        
+
         logger = wandb_logger
         print("Using WandbLogger")
     else:

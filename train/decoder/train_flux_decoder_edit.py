@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     model = FluxForQwen(
         torch_dtype={"32": torch.float32, "bf16": torch.bfloat16}.get(args.precision, torch.float16),
-        pretrained_weights=[args.pretrained_dit_path, args.pretrained_text_encoder_path, args.pretrained_text_encoder_2_path, args.pretrained_vae_path],
+        pretrained_weights=[args.pretrained_dit_path, args.pretrained_vae_path],
         learning_rate=args.learning_rate,
         use_gradient_checkpointing=args.use_gradient_checkpointing,
         state_dict_converter=FluxLoRAConverter.align_to_opensource_format if args.align_to_opensource_format else None,
