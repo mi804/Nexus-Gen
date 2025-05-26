@@ -133,7 +133,7 @@ class FluxForQwen(pl.LightningModule):
             self.pipe.denoising_model().parameters()
         )
         optimizer = torch.optim.AdamW(trainable_modules, lr=self.learning_rate)
-    
+
         total_steps = self.trainer.estimated_stepping_batches
         warmup_steps = self.lr_warmup_steps
         print('total_steps:', total_steps)
@@ -162,7 +162,7 @@ class FluxForQwen(pl.LightningModule):
         checkpoint.clear()
 
         state_dict = self.pipe.denoising_model().state_dict()
-        
+
         global_adapter_state_dict = self.global_adapter.state_dict()
         global_prefix = 'global_adapter'
         global_adapter_state_dict = {f"{global_prefix}.{key}": value for key, value in global_adapter_state_dict.items()}
@@ -329,7 +329,7 @@ def launch_training_task(model, args):
         num_workers=args.dataloader_num_workers
     )
     # train
-    if args.use_wandb:        
+    if args.use_wandb:
         from pytorch_lightning.loggers import WandbLogger
 
         wandb_config = {"UPPERFRAMEWORK": "DiffSynth-Studio"}
@@ -342,7 +342,7 @@ def launch_training_task(model, args):
             config=wandb_config,
             save_dir=os.path.join(args.output_path, "wandb")
         )
-        
+
         logger = wandb_logger
         print("Using WandbLogger")
     else:

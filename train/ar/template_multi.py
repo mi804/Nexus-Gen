@@ -144,6 +144,12 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
                 pixel_values = media_inputs['pixel_values'].type(dtype)
                 image_embeds = model.visual(pixel_values, grid_thw=media_inputs['image_grid_thw'])
                 inputs_embeds += image_embeds.mean() * 0.
+
+                num_embeddings = model.image_prefill_embeds.num_embeddings
+                image_prefill_embeds = model.image_prefill_embeds(
+                    torch.arange(num_embeddings, device=inputs_embeds.device).long()
+                )
+                inputs_embeds = inputs_embeds + image_prefill_embeds.mean() * 0.
         else:
             if pixel_values is not None:
                 pixel_values = pixel_values.type(dtype)
@@ -172,6 +178,11 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
                     assert image_prefill_embeds.size(0) == image_embeds_labels.size(0)
                     # replace output image embeddings with prefill image embeddings
                     inputs_embeds.masked_scatter_(excluded_mask, image_prefill_embeds)
+                    # tmp_embeds = torch.zeros_like(inputs_embeds)
+                    # tmp_embeds.masked_scatter_(excluded_mask, image_prefill_embeds)
+                    # excluded_mask = excluded_mask.to(inputs_embeds.dtype)
+                    # inputs_embeds = inputs_embeds * (1 - excluded_mask) + tmp_embeds * excluded_mask + image_prefill_embeds.mean() * 0.
+
                     # replace input image embeddings with image embeddings
                     inputs_embeds = inputs_embeds * (1 - image_mask) + expanded_image_embeds * image_mask
                 else:

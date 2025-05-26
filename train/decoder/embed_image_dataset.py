@@ -2,7 +2,7 @@ import torch, os, torchvision
 from torchvision import transforms
 from PIL import Image
 import json
-
+import random
 
 def parse_jsonl_file(jsonl_file_path, read_limit=None):
     with open(jsonl_file_path, 'r') as file:
@@ -55,6 +55,11 @@ class QwenVisual2Image(torch.utils.data.Dataset):
         image = self.image_processor(image)
 
         embed = torch.load(self.embed_paths[data_id], weights_only=True)
+        pick_rate = 0.1
+        if random.random() < pick_rate:
+            empty_embed = torch.zeros_like(embed)
+            embed = empty_embed
+
         return {"embed": embed, "image": image}
 
 
