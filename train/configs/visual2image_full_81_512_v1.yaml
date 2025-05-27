@@ -14,7 +14,7 @@ batch_size: 1
 training_strategy: 'deepspeed_stage_3'
 precision: 'bf16'
 steps_per_epoch: 64000
-max_epochs: 10
+max_epochs: 100
 lr_warmup_steps: 50
 use_wandb: True
 wandb_api_key: 4bc3aa1826820be83c7e7ee086cf7256f7d40924

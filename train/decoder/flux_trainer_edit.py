@@ -5,6 +5,7 @@ from modelscope.hub.api import HubApi
 from diffsynth import ModelManager, FluxImagePipeline
 from modeling.decoder.flux_image_pipeline import FluxImagePipelineAll2All
 from transformers import get_cosine_schedule_with_warmup, get_constant_schedule_with_warmup
+from lightning.pytorch.strategies import DeepSpeedStrategy
 
 
 
@@ -180,7 +181,6 @@ class FluxForQwen(pl.LightningModule):
         checkpoint.update(adapter_state_dict)
 
 
-
 def add_general_parsers(parser):
     parser.add_argument(
         "--dataset_path",
@@ -352,12 +352,20 @@ def launch_training_task(model, args):
         print("Using WandbLogger")
     else:
         logger = None
+
+    if args.training_strategy == "deepspeed_stage_3":
+        import json
+        with open("train/configs/deepspeed_config.json", "r") as f:
+            deepspeed_config = json.load(f)
+        strategy = DeepSpeedStrategy(config=deepspeed_config)
+    else:
+        strategy = args.training_strategy
     trainer = pl.Trainer(
         max_epochs=args.max_epochs,
         accelerator="gpu",
         devices="auto",
         precision=args.precision,
-        strategy=args.training_strategy,
+        strategy=strategy,
         default_root_dir=args.output_path,
         accumulate_grad_batches=args.accumulate_grad_batches,
         callbacks=[pl.pytorch.callbacks.ModelCheckpoint(save_top_k=-1)],

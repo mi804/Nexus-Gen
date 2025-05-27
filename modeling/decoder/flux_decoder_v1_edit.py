@@ -10,7 +10,8 @@ class FluxDiTStateDictConverter:
         pass
 
     def from_diffusers(self, state_dict):
-        return state_dict, {"disable_guidance_embedder": True}
+        # return state_dict, {"disable_guidance_embedder": True}
+        return state_dict
 
 
 def state_dict_converter():

@@ -9,20 +9,21 @@ from modeling.ar.processing_qwen2_5_vl import Qwen2_5_VLProcessor
 
 
 model_path = 'models/Nexus-Gen'
-model_config = AutoConfig.from_pretrained(model_path)
-model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_path,
+ckpt_path = 'output/v60-20250526-155430/checkpoint-4149'
+model_config = AutoConfig.from_pretrained(ckpt_path)
+model = Qwen2_5_VLForConditionalGeneration.from_pretrained(ckpt_path,
                                                            config=model_config,
                                                            trust_remote_code=True,
                                                            torch_dtype="auto",
                                                            device_map="cuda:0")
-processor = Qwen2_5_VLProcessor.from_pretrained(model_path)
+processor = Qwen2_5_VLProcessor.from_pretrained(ckpt_path)
 model.eval()
 
 max_pixels = 262640
 gen_size = 512
 
-instruction = "<image> Make the car green." # <image> is a placeholder for the image
-edit_images = ["assets/examples/car.png"]
+instruction = "<image> Make the umbrella green." # <image> is a placeholder for the image
+edit_images = ["ae0357ca-7022-4628-a191-9111b5d022ac_0.png"]
 instruction = instruction.replace('<image>', '<|vision_start|><|image_pad|><|vision_end|>')
 messages = [
     {

@@ -7,13 +7,14 @@ from modeling.ar.processing_qwen2_5_vl import Qwen2_5_VLProcessor
 
 
 model_path = 'models/Nexus-Gen'
-model_config = AutoConfig.from_pretrained(model_path)
-model = Qwen2_5_VLForConditionalGeneration.from_pretrained(model_path,
+ckpt_path = 'output/v60-20250526-155430/checkpoint-4149'
+model_config = AutoConfig.from_pretrained(ckpt_path)
+model = Qwen2_5_VLForConditionalGeneration.from_pretrained(ckpt_path,
                                                            config=model_config,
                                                            trust_remote_code=True,
                                                            torch_dtype="auto",
                                                            device_map="cuda:0")
-processor = Qwen2_5_VLProcessor.from_pretrained(model_path)
+processor = Qwen2_5_VLProcessor.from_pretrained(ckpt_path)
 model.eval()
 
 prompt = "A beautiful woman, sunrise."
