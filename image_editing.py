@@ -73,10 +73,10 @@ if __name__ == '__main__':
     messages = [{"role": "user", "content": [{"type": "text", "text": instruction}]}]
     text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     input_image = Image.open(args.input_image).convert('RGB')
-    bound_image = bound_image(input_image, max_pixels=args.max_pixels)
+    bounded_image = bound_image(input_image, max_pixels=args.max_pixels)
     inputs = processor(
         text=[text],
-        images=[bound_image],
+        images=[bounded_image],
         padding=True,
         return_tensors="pt",
     )

@@ -56,7 +56,7 @@ if __name__ == '__main__':
     text = processor.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
-    image_inputs, video_inputs = process_vision_info(messages)
+    image_inputs, _ = process_vision_info(messages)
     image_inputs = [bound_image(image) for image in image_inputs]
     inputs = processor(
         text=[text],

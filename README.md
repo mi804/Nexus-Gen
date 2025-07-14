@@ -81,8 +81,9 @@ Nexus-Gen also supports image editing using Chinese prompts:
 ```shell
 python image_editing.py --input_image assets/examples/cat.png  --instruction "给猫加一副太阳镜"
 ```
-
+Please see `image_editing.py` for details about the inference hyperparameters.
 ### Gradio demo
+Try Nexus-Gen with a gradio UI:
 ```shell
 python app.py
 ```

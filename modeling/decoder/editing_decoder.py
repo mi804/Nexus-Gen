@@ -21,13 +21,13 @@ def state_dict_converter():
 
 class NexusGenEditingDecoder:
 
-    def __init__(self, flux_all2all_modelpath, flux_path, qwenvl_path, device='cuda', torch_dtype=torch.bfloat16, enable_cpu_offload=False):
+    def __init__(self, decoder_path, flux_path, qwenvl_path, device='cuda', torch_dtype=torch.bfloat16, enable_cpu_offload=False):
         self.device = device
         self.torch_dtype = torch_dtype
         self.enable_cpu_offload = enable_cpu_offload
-        self.pipe, self.embedding_merger = self.get_pipe(flux_all2all_modelpath, flux_path, qwenvl_path, device, torch_dtype)
+        self.pipe, self.embedding_merger = self.get_pipe(decoder_path, flux_path, qwenvl_path, device, torch_dtype)
 
-    def get_pipe(self, flux_all2all_modelpath, flux_path, qwenvl_path, device="cuda", torch_dtype=torch.bfloat16):
+    def get_pipe(self, decoder_path, flux_path, qwenvl_path, device="cuda", torch_dtype=torch.bfloat16):
         if self.enable_cpu_offload:
             model_manager = ModelManager(torch_dtype=torch_dtype, device='cpu')
         else:
@@ -38,7 +38,7 @@ class NexusGenEditingDecoder:
             f"{flux_path}/FLUX/FLUX.1-dev/ae.safetensors",
         ])
 
-        state_dict = load_state_dict(flux_all2all_modelpath)
+        state_dict = load_state_dict(decoder_path)
         dit_state_dict = {key.replace("pipe.dit.", ""): value for key, value in state_dict.items() if key.startswith('pipe.dit.')}
         embedding_merger_state_dict = {key.replace("embedding_merger.", ""): value for key, value in state_dict.items() if key.startswith('embedding_merger.')}
 
@@ -48,7 +48,7 @@ class NexusGenEditingDecoder:
         embedding_merger.to(device, dtype=torch_dtype)
 
         FluxDiT.state_dict_converter = staticmethod(state_dict_converter)
-        model_manager.load_model_from_single_file(flux_all2all_modelpath, state_dict=dit_state_dict, model_names=['flux_dit'], model_classes=[FluxDiT], model_resource='diffusers')
+        model_manager.load_model_from_single_file(decoder_path, state_dict=dit_state_dict, model_names=['flux_dit'], model_classes=[FluxDiT], model_resource='diffusers')
         pipe = NexusGenEditingPipeline.from_model_manager(model_manager, device=device)
         if self.enable_cpu_offload:
             pipe.enable_cpu_offload()
