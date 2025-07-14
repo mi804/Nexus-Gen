@@ -15,7 +15,7 @@
 </div>
 
 ## News
-- **July 11, 2025**: **[Nexus-Gen V2](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2) is released**. Please check more details in the [technical report](http://arxiv.org/abs/2504.21356). The model is opitimized from the following aspects:
+- **July 11, 2025**: **[Nexus-Gen V2](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2) is released**. [Technical report](http://arxiv.org/abs/2504.21356) will be updated soonly. The model is opitimized from the following aspects:
   - Better image understanding capbility (**45.7 on [MMMU](https://github.com/MMMU-Benchmark/MMMU)**) through optimization on training schedules.
   - Better image generation (**0.81 on [GenEval](https://github.com/djghosh13/geneval.git)**) robustness through training with long-short caption.
   - Better reconstruction in image editing tasks. We have proposed a better editing decoder for Nexus-Gen.
@@ -24,7 +24,6 @@
 
 ## What is Nexus-Gen
 Nexus-Gen is a unified model that synergizes the language reasoning capabilities of LLMs with the image synthesis power of diffusion models. We propose a unified image embedding spaces to model image understanding, generation and editing tasks. To perform joint optimization across multiple tasks, we curate a large-scale dataset of 26.3 million samples and train Nexus-Gen using a multi-stage strategy, which includes the multi-task pretraining of the autoregressive model and conditional adaptations of the generation and editing decoders. 
-ing, generation and editing tasks.
 
 ![architecture](assets/illustrations/architecture.jpg)
 
