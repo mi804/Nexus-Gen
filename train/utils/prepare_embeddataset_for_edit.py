@@ -1,15 +1,11 @@
+import os
+import logging
+import json
 import torch
 import torch.multiprocessing as mp
 from PIL import Image
-import random
-import os
 from tqdm import tqdm
-import logging
-import json
 from transformers import AutoConfig
-
-from qwen_vl_utils import process_vision_info
-from torchvision import transforms
 from modeling.ar.modeling_qwen2_5_vl import Qwen2_5_VLForConditionalGeneration
 from modeling.ar.processing_qwen2_5_vl import Qwen2_5_VLProcessor
 from utils import read_jsonl
@@ -55,8 +51,7 @@ def get_target_embeddings(images, messages, processor, model, num_img_tokens=81)
     outputs = model(inputs_embeds=input_embeds, position_ids=position_ids, attention_mask=inputs['attention_mask'], return_dict=True)
     output_image_embeddings = outputs.image_embeddings[:, :-1, :]
     output_image_embeddings = output_image_embeddings[gt_image_mask[:, 1:]]
-    output_image_embeddings = output_image_embeddings.unsqueeze(0)
-    return output_image_embeddings, input_image_embeds.unsqueeze(0)
+    return output_image_embeddings, input_image_embeds
 
 def get_image_embeds(rank, samples, out_embed_dir, output_jsonl, lock):
     torch.cuda.set_device(rank)
@@ -84,8 +79,8 @@ def get_image_embeds(rank, samples, out_embed_dir, output_jsonl, lock):
             with torch.no_grad():
                 # process source image (image[0]) to 324 tokens, process target image (image[1]) to 81 tokens
                 target_image_embeddings, source_image_embeddings = get_target_embeddings(images, sample['messages'], processor, model, num_img_tokens=81)
-            assert target_image_embeddings.shape[1] == 81, f"Target image embeddings should have 81 tokens, got {target_image_embeddings.shape[1]}"
-            assert source_image_embeddings.shape[1] == 324, f"Source image embeddings should have 324 tokens, got {source_image_embeddings.shape[1]}"
+            assert target_image_embeddings.shape[0] == 81, f"Target image embeddings should have 81 tokens, got {target_image_embeddings.shape[1]}"
+            assert source_image_embeddings.shape[0] == 324, f"Source image embeddings should have 324 tokens, got {source_image_embeddings.shape[1]}"
             torch.save(source_image_embeddings, sample['embed_source'])
             torch.save(target_image_embeddings, sample['embed_target'])
 

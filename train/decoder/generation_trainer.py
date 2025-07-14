@@ -1,18 +1,29 @@
+import yaml
+import argparse
+import torch
 import lightning as pl
-import torch, os
-from train.decoder.embed_image_dataset import QwenVisual2Image
-from modelscope.hub.api import HubApi
+from transformers import get_constant_schedule_with_warmup
 from diffsynth import ModelManager
-from modeling.decoder.flux_image_pipeline import FluxImagePipelineAll2All
-from transformers import get_cosine_schedule_with_warmup, get_constant_schedule_with_warmup
+from train.decoder.embed_image_dataset import GenerationDecoderDataset
+from modeling.decoder.pipelines import NexusGenGenerationPipeline
 
 
-class FluxForQwen(pl.LightningModule):
+class GenerationDecoder(pl.LightningModule):
+
     def __init__(
         self,
-        torch_dtype=torch.float16, pretrained_weights=[], preset_lora_path=None,
-        learning_rate=1e-4, use_gradient_checkpointing=True, state_dict_converter=None,
-        quantize = None, in_channel=3584, out_channel=4096, expand_ratio=1, lr_warmup_steps=500, load_from=None,
+        torch_dtype=torch.float16,
+        pretrained_weights=[],
+        preset_lora_path=None,
+        learning_rate=1e-5,
+        use_gradient_checkpointing=True,
+        state_dict_converter=None,
+        quantize=None,
+        in_channel=3584,
+        out_channel=4096,
+        expand_ratio=1,
+        lr_warmup_steps=100,
+        load_from=None,
     ):
         super().__init__()
         # Set parameters
@@ -31,11 +42,7 @@ class FluxForQwen(pl.LightningModule):
         if preset_lora_path is not None:
             model_manager.load_lora(preset_lora_path)
 
-        self.pipe = FluxImagePipelineAll2All.from_model_manager(model_manager)
-
-        if quantize is not None:
-            self.pipe.dit.quantize()
-
+        self.pipe = NexusGenGenerationPipeline.from_model_manager(model_manager)
         self.pipe.scheduler.set_timesteps(1000, training=True)
 
         self.adapter = torch.nn.Sequential(
@@ -47,15 +54,8 @@ class FluxForQwen(pl.LightningModule):
 
         if load_from is not None:
             state_dict = torch.load(load_from, weights_only=True, map_location="cpu")
-            adapter_states = ['0.weight', '0.bias', '1.weight', '1.bias', '3.weight', '3.bias', '4.weight', '4.bias']
-            adapter_state_dict = {}
-            dit_state_dict = {}
-
-            for key, value in state_dict.items():
-                if key in adapter_states:
-                    adapter_state_dict[key] = state_dict[key]
-                else:
-                    dit_state_dict[key] = state_dict[key]
+            adapter_state_dict = {key.replace("adapter.", ""): value for key, value in state_dict.items() if key.startswith('adapter.')}
+            dit_state_dict = {key.replace("pipe.dit.", ""): value for key, value in state_dict.items() if not key.startswith('adapter.')}
             self.adapter.load_state_dict(adapter_state_dict)
             self.pipe.denoising_model().load_state_dict(dit_state_dict)
 
@@ -122,20 +122,15 @@ class FluxForQwen(pl.LightningModule):
             self.pipe.denoising_model().parameters()
         )
         optimizer = torch.optim.AdamW(trainable_modules, lr=self.learning_rate)
-    
+
         total_steps = self.trainer.estimated_stepping_batches
         warmup_steps = self.lr_warmup_steps
         print('total_steps:', total_steps)
 
-        scheduler = get_cosine_schedule_with_warmup(
+        scheduler = get_constant_schedule_with_warmup(
             optimizer,
             num_warmup_steps=warmup_steps,
-            num_training_steps=total_steps,
         )
-        # scheduler = get_constant_schedule_with_warmup(
-        #     optimizer,
-        #     num_warmup_steps=warmup_steps,
-        # )
 
         return {
             "optimizer": optimizer,
@@ -149,16 +144,51 @@ class FluxForQwen(pl.LightningModule):
 
     def on_save_checkpoint(self, checkpoint):
         checkpoint.clear()
+        dit_state_dict = self.pipe.denoising_model().state_dict()
+        dit_state_dict = {f"pipe.dit.{key}": value for key, value in dit_state_dict.items()}
+        checkpoint.update(dit_state_dict)
 
-        save_state_dict = self.adapter.state_dict()
-        state_dict = self.pipe.denoising_model().state_dict()
-        save_state_dict.update(state_dict)
-
-        checkpoint.update(save_state_dict)
+        adapter_state_dict = self.adapter.state_dict()
+        adapter_state_dict = {f"adapter.{key}": value for key, value in adapter_state_dict.items()}
+        checkpoint.update(adapter_state_dict)
 
 
+def launch_training_task(model, args):
+    print(args)
+    # dataset and data loader
+    dataset = GenerationDecoderDataset(
+        args.dataset_path,
+        steps_per_epoch=args.steps_per_epoch,
+        height=args.height,
+        width=args.width,
+        center_crop=args.center_crop,
+        random_flip=args.random_flip
+    )
+    train_loader = torch.utils.data.DataLoader(
+        dataset,
+        shuffle=True,
+        batch_size=args.batch_size,
+        num_workers=args.dataloader_num_workers
+    )
+    # train
+    trainer = pl.Trainer(
+        max_epochs=args.max_epochs,
+        accelerator="gpu",
+        devices="auto",
+        precision=args.precision,
+        strategy=args.training_strategy,
+        default_root_dir=args.output_path,
+        accumulate_grad_batches=args.accumulate_grad_batches,
+        callbacks=[pl.pytorch.callbacks.ModelCheckpoint(save_top_k=-1)],
+        logger=None,
+        log_every_n_steps=5,
+    )
+    trainer.fit(model=model, train_dataloaders=train_loader)
 
-def add_general_parsers(parser):
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Simple example of a training script.")
     parser.add_argument(
         "--dataset_path",
         type=str,
@@ -192,7 +222,7 @@ def add_general_parsers(parser):
     )
     parser.add_argument(
         "--center_crop",
-        default=False,
+        default=True,
         action="store_true",
         help=(
             "Whether to center crop the input images to the resolution. If not set, the images will be randomly"
@@ -227,7 +257,7 @@ def add_general_parsers(parser):
     parser.add_argument(
         "--learning_rate",
         type=float,
-        default=1e-4,
+        default=1e-5,
         help="Learning rate.",
     )
     parser.add_argument(
@@ -262,92 +292,60 @@ def add_general_parsers(parser):
         help="lr_warmup_steps.",
     )
     parser.add_argument(
-        "--modelscope_model_id",
-        type=str,
-        default=None,
-        help="Model ID on ModelScope (https://www.modelscope.cn/). The model will be uploaded to ModelScope automatically if you provide a Model ID.",
-    )
-    parser.add_argument(
-        "--modelscope_access_token",
-        type=str,
-        default=None,
-        help="Access key on ModelScope (https://www.modelscope.cn/). Required if you want to upload the model to ModelScope.",
-    )
-    parser.add_argument(
         "--pretrained_lora_path",
         type=str,
         default=None,
         help="Pretrained LoRA path. Required if the training is resumed.",
     )
     parser.add_argument(
-        "--use_wandb",
-        default=True,
-        action="store_true",
-        help="Whether to use SwanLab logger.",
+        "--config",
+        type=str,
+        default="train/configs/generation_decoder.yaml",
+        help="Path to the YAML configuration file.",
     )
     parser.add_argument(
-        "--swanlab_mode",
+        "--pretrained_text_encoder_path",
+        type=str,
+        default='models/FLUX/FLUX.1-dev/text_encoder/model.safetensors',
+        help="Path to pretrained text encoder model. For example, `models/FLUX/FLUX.1-dev/text_encoder/model.safetensors`.",
+    )
+    parser.add_argument(
+        "--pretrained_dit_path",
+        type=str,
+        default='models/FLUX/FLUX.1-dev/flux1-dev.safetensors',
+        help="Path to pretrained dit model. For example, `models/FLUX/FLUX.1-dev/flux1-dev.safetensors`.",
+    )
+    parser.add_argument(
+        "--pretrained_vae_path",
+        type=str,
+        default='models/FLUX/FLUX.1-dev/ae.safetensors',
+        help="Path to pretrained vae model. For example, `models/FLUX/FLUX.1-dev/ae.safetensors`.",
+    )
+    parser.add_argument(
+        "--load_from",
+        type=str,
         default=None,
-        help="SwanLab mode (cloud or local).",
+        help="Path to pretrained dit and adapter.",
     )
-    return parser
+    args = parser.parse_args()
+    with open(args.config, "r") as f:
+        config = yaml.safe_load(f)
+
+    # Update args with YAML configuration
+    for key, value in config.items():
+        setattr(args, key, value)
+    return args
 
 
-def launch_training_task(model, args):
-    print(args)
-    # dataset and data loader
-    dataset = QwenVisual2Image(
-        args.dataset_path,
-        steps_per_epoch=args.steps_per_epoch,
-        height=args.height,
-        width=args.width,
-        center_crop=args.center_crop,
-        random_flip=args.random_flip
+if __name__ == '__main__':
+    args = parse_args()
+    load_from = None if args.load_from is None or args.load_from.lower() == 'none' else args.load_from
+    model = GenerationDecoder(
+        torch_dtype={"32": torch.float32, "bf16": torch.bfloat16}.get(args.precision, torch.float16),
+        pretrained_weights=[args.pretrained_dit_path, args.pretrained_text_encoder_path, args.pretrained_vae_path],
+        learning_rate=args.learning_rate,
+        use_gradient_checkpointing=args.use_gradient_checkpointing,
+        lr_warmup_steps=args.lr_warmup_steps,
+        load_from=load_from,
     )
-    train_loader = torch.utils.data.DataLoader(
-        dataset,
-        shuffle=True,
-        batch_size=args.batch_size,
-        num_workers=args.dataloader_num_workers
-    )
-    # train
-    if args.use_wandb:        
-        from pytorch_lightning.loggers import WandbLogger
-
-        wandb_config = {"UPPERFRAMEWORK": "DiffSynth-Studio"}
-        wandb_config.update(vars(args))
-        import os
-        os.makedirs(os.path.join(args.output_path, "wandb"), exist_ok=True)
-        wandb_logger = WandbLogger(
-            project="diffsynth_studio",
-            name="diffsynth_studio",
-            config=wandb_config,
-            save_dir=os.path.join(args.output_path, "wandb")
-        )
-        
-        logger = wandb_logger
-        print("Using WandbLogger")
-    else:
-        logger = None
-    trainer = pl.Trainer(
-        max_epochs=args.max_epochs,
-        accelerator="gpu",
-        devices="auto",
-        precision=args.precision,
-        strategy=args.training_strategy,
-        default_root_dir=args.output_path,
-        accumulate_grad_batches=args.accumulate_grad_batches,
-        callbacks=[pl.pytorch.callbacks.ModelCheckpoint(save_top_k=-1)],
-        logger=logger,
-        log_every_n_steps=5,
-    )
-    trainer.fit(model=model, train_dataloaders=train_loader)
-
-    # Upload models
-    if args.modelscope_model_id is not None and args.modelscope_access_token is not None:
-        print(f"Uploading models to modelscope. model_id: {args.modelscope_model_id} local_path: {trainer.log_dir}")
-        with open(os.path.join(trainer.log_dir, "configuration.json"), "w", encoding="utf-8") as f:
-            f.write('{"framework":"Pytorch","task":"text-to-image-synthesis"}\n')
-        api = HubApi()
-        api.login(args.modelscope_access_token)
-        api.push_model(model_id=args.modelscope_model_id, model_dir=trainer.log_dir)
+    launch_training_task(model, args)

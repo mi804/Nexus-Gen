@@ -1,5 +1,6 @@
 # IMAGE_TRAIN_SIZE refer to 81 token embeddings
 # Please run download_models.py to download the required models to 'models/Nexus-GenV2' before training
+# USE_IMG_EMBED_AS_INPUT=false refers to the prefilled autoregression strategy
 PYTHONPATH=$(pwd) \
 IMAGE_TRAIN_SIZE=252 \
 USE_IMG_EMBED_AS_INPUT=false \
@@ -15,7 +16,7 @@ swift sft \
     --template 'qwenall2all_custom' \
     --custom_register_path train/ar/model.py \
                            train/ar/template.py \
-    --dataset 'data/all2all/blip/blip_60k_msg.jsonl' \
+    --dataset 'assets/example_datasets/llm_dataset.jsonl' \
     --train_type full \
     --torch_dtype bfloat16 \
     --num_train_epochs 2 \
