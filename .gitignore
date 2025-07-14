@@ -9,3 +9,4 @@ t2i_models
 .vscode
 output
 wandb
+**.pt

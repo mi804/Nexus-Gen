@@ -89,7 +89,56 @@ python app.py
 ```
 
 ## Model training
-Nexus-Gen is trained base on [ms-swift](https://github.com/modelscope/ms-swift.git) and [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio.git). You can find the training scripts in `train/scripts/train_decoder.sh` and `train_llm.sh`.
+We train Nexus-Gen using a multi-stage strategy, which includes the multi-task pretraining of the autoregressive model and conditional adaptations of the generation and editing decoders. The unified message-like dataset format is:
+```json
+"images": ["xxx.jpg", "xxx.jpg"]
+"messages": [
+    {"role": "user", "content": "<image> xxx"}, 
+    {"role": "assistant", "content": "xxx"},
+    {"role": "user", "content": "xxx"},
+    {"role": "assistant", "content": "xxx <image>"}
+]
+```
+See `assets/example_datasets` for more examples.
+### 1. Multi-task pretraining for autoregressive model
+The autoregressive model of Nexus-Gen is trained on image understanding, generation and editing tasks using [ms-swift](https://github.com/modelscope/ms-swift.git) framework. Please refer to `assets/example_datasets/llm_dataset.jsonl` for the example dataset.
+
+Run the following script to perform finetuning on Nexus-Gen V2. Refer to the script for more configurations.
+```shell
+bash train/scripts/train_autoregressive_model.sh
+```
+
+If you would like to train the autoregressive model from sctrach, just replace the checkpoints of Nexus-Gen V2 with that of Qwen2.5-VL-7B-Instruct. Specially, replace the `*.safetensors` and `models/Nexus-GenV2/model.safetensors.index.json` files.
+
+### 2. Conditional adaptation for generation decoder
+Generation decoder is trained by image reconstruction with the 81-token image embeddings. There are two steps to train it.
+
+(1) Prepare for the embedding-image dataset: given the message-like dataset `assets/example_datasets/gen_decoder_dataset.jsonl`, run the following code to pre-calculate the embeddings for each image and get the embed-like dataset `assets/example_datasets/embeds_gen/gen_decoder_embeds_dataset.jsonl`
+```python
+python train/utils/prepare_embeddataset_for_gen.py
+```
+(2) Train the generation decoder: run the following script to train generation decoder.
+```shell
+bash train/scripts/train_generation_decoder.sh
+```
+Please refer to `train/configs/generation_decoder.yaml` for detailed configurations.
+
+### 3. Conditional adaptation for editing decoder
+Editing decoder is trained on the ImagePulse dataset. There are two steps to train it.
+(1) Prepare for the embedding-image dataset: given the message-like dataset `assets/example_datasets/edit_decoder_dataset.jsonl`, run the following code to pre-calculate the embeddings for the source and target images and get the embed-like dataset `assets/example_datasets/embeds_edit/edit_decoder_embeds_dataset.jsonl`
+```python
+PYTHONPATH=$(pwd) python train/utils/prepare_embeddataset_for_edit.py
+```
+(2) Train the editing decoder: run the following script to train editing decoder.
+```shell
+bash train/scripts/train_editing_decoder.sh
+```
+Please refer to `train/configs/editing_decoder.yaml` for detailed configurations. Please note that the projector of editing decoder includes a transformer layer, which is initialized from Qwen2.5-VL-7B-Instruct. So it is nessary to download the checkpoints to `models/Qwen/Qwen2.5-VL-7B-Instruct`:
+```shell
+modelscope download --model Qwen/Qwen2.5-VL-7B-Instruct --local_dir models/Qwen/Qwen2.5-VL-7B-Instruct
+```
+## Training Datasets
+To be published.
 
 ## Qualitative results of Nexus-Gen
 ![cover](assets/illustrations/gen_edit.jpg)
