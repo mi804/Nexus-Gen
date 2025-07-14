@@ -1519,6 +1519,7 @@ class Qwen2_5_VLForConditionalGeneration(Qwen2_5_VLPreTrainedModel, GenerationMi
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         self.vision_head = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         self.rope_deltas = None  # cache rope_deltas here
+        self.image_prefill_embeds = nn.Embedding(81, config.hidden_size)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -2033,6 +2034,9 @@ class Qwen2_5_VLForConditionalGeneration(Qwen2_5_VLPreTrainedModel, GenerationMi
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
 
+            # prepare prefilled embeds
+            model_inputs.update(self.prepare_prefilled_image_embeds(len(output_image_embeddings), num_img_tokens, is_sampling_img, **model_kwargs))
+
             # parse position_ids from model_kwargs
             model_inputs.update(self.prepare_image_position_ids(input_ids, generation_image_grid_thw, is_sampling_img, **model_kwargs))
 
@@ -2151,6 +2155,15 @@ class Qwen2_5_VLForConditionalGeneration(Qwen2_5_VLPreTrainedModel, GenerationMi
             )
         else:
             return input_ids
+
+
+    def prepare_prefilled_image_embeds(self, cur_image_tokens, num_img_tokens, is_sampling_img, **model_kwargs):
+        if cur_image_tokens == 0 or cur_image_tokens > num_img_tokens or not bool(is_sampling_img):
+            return {}
+        # TODO: support batch image sample
+        image_idx = torch.tensor([cur_image_tokens-1]).to(self.device).long().unsqueeze(0)
+        inputs_embeds = self.image_prefill_embeds(image_idx)
+        return {"inputs_embeds": inputs_embeds}
 
 
     def get_default_image_grid_thw(self,):

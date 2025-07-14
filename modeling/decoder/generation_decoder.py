@@ -2,7 +2,7 @@ import torch
 from diffsynth import ModelManager
 from diffsynth.models.utils import load_state_dict
 from diffsynth.models.flux_dit import FluxDiT
-from .flux_image_pipeline import FluxImagePipelineAll2All
+from .pipelines import NexusGenGenerationPipeline
 
 
 class FluxDiTStateDictConverter:
@@ -17,15 +17,15 @@ def state_dict_converter():
     return FluxDiTStateDictConverter()
 
 
-class FluxDecoder:
+class NexusGenGenerationDecoder:
 
-    def __init__(self, flux_all2all_modelpath, flux_path, device='cuda', torch_dtype=torch.bfloat16, enable_cpu_offload=False):
+    def __init__(self, decoder_path, flux_path, device='cuda', torch_dtype=torch.bfloat16, enable_cpu_offload=False):
         self.device = device
         self.torch_dtype = torch_dtype
         self.enable_cpu_offload = enable_cpu_offload
-        self.pipe, self.adapter = self.get_pipe(flux_all2all_modelpath, flux_path, device, torch_dtype)
+        self.pipe, self.adapter = self.get_pipe(decoder_path, flux_path, device, torch_dtype)
 
-    def get_pipe(self, flux_all2all_modelpath, flux_path, device="cuda", torch_dtype=torch.bfloat16):
+    def get_pipe(self, decoder_path, flux_path, device="cuda", torch_dtype=torch.bfloat16):
         if self.enable_cpu_offload:
             model_manager = ModelManager(torch_dtype=torch_dtype, device='cpu')
         else:
@@ -36,28 +36,21 @@ class FluxDecoder:
             f"{flux_path}/FLUX/FLUX.1-dev/ae.safetensors",
         ])
 
-        state_dict = load_state_dict(flux_all2all_modelpath)
-
-        adapter_states = ['0.weight', '0.bias', '1.weight', '1.bias', '3.weight', '3.bias', '4.weight', '4.bias']
-        adapter_state_dict = {}
-        for key in adapter_states:
-            adapter_state_dict[key] = state_dict.pop(key)
-
-        in_channel = 3584
-        out_channel = 4096
-        expand_ratio = 1
-        adapter = torch.nn.Sequential(torch.nn.Linear(in_channel, out_channel * expand_ratio),
-                                      torch.nn.LayerNorm(out_channel * expand_ratio), torch.nn.ReLU(),
-                                      torch.nn.Linear(out_channel * expand_ratio, out_channel),
-                                      torch.nn.LayerNorm(out_channel))
+        state_dict = load_state_dict(decoder_path)
+        adapter_state_dict = {key.replace("adapter.", ""): value for key, value in state_dict.items() if key.startswith('adapter.')}
+        dit_state_dict = {key.replace("pipe.dit.", ""): value for key, value in state_dict.items() if not key.startswith('adapter.')}
+        
+        adapter = torch.nn.Sequential(torch.nn.Linear(3584, 4096),
+                                      torch.nn.LayerNorm(4096), torch.nn.ReLU(),
+                                      torch.nn.Linear(4096, 4096),
+                                      torch.nn.LayerNorm(4096))
         adapter.load_state_dict(adapter_state_dict)
         adapter.to(device, dtype=torch_dtype)
 
         FluxDiT.state_dict_converter = staticmethod(state_dict_converter)
-        model_manager.load_model_from_single_file(flux_all2all_modelpath, state_dict=state_dict, model_names=['flux_dit'], model_classes=[FluxDiT], model_resource='diffusers')
+        model_manager.load_model_from_single_file(decoder_path, state_dict=dit_state_dict, model_names=['flux_dit'], model_classes=[FluxDiT], model_resource='diffusers')
 
-        pipe = FluxImagePipelineAll2All.from_model_manager(model_manager, device=device)
-        pipe.dit.load_state_dict(state_dict)
+        pipe = NexusGenGenerationPipeline.from_model_manager(model_manager, device=device)
         if self.enable_cpu_offload:
             pipe.enable_cpu_offload()
 
@@ -66,19 +59,20 @@ class FluxDecoder:
     @torch.no_grad()
     def decode_image_embeds(self,
                             output_image_embeddings,
+                            num_inference_steps=50,
                             height=512,
                             width=512,
-                            num_inference_steps=50,
                             seed=42,
                             negative_prompt="",
                             cfg_scale=1.0,
+                            embedded_guidance=3.5,
                             **pipe_kwargs):
         output_image_embeddings = output_image_embeddings.to(device=self.device, dtype=self.torch_dtype)
         image_embed = self.adapter(output_image_embeddings)
         image = self.pipe(prompt="",
                           image_embed=image_embed,
                           num_inference_steps=num_inference_steps,
-                          embedded_guidance=3.5,
+                          embedded_guidance=embedded_guidance,
                           negative_prompt=negative_prompt,
                           cfg_scale=cfg_scale,
                           height=height,

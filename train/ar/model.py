@@ -35,6 +35,10 @@ def get_model_tokenizer_qwen2_5_all2all(*args, **kwargs):
     print(f'USE_DYNAMIC_RATIO {USE_DYNAMIC_RATIO}')
     CONSISTANT_EDIT_SCALE = os.environ.get('CONSISTANT_EDIT_SCALE', 'False').lower() == 'true'
     print(f'CONSISTANT_EDIT_SCALE {CONSISTANT_EDIT_SCALE}')
+    TOKEN_LOSS_WEIGHT = float(os.environ.get('TOKEN_LOSS_WEIGHT', 3.0))
+    print(f'TOKEN_LOSS_WEIGHT {TOKEN_LOSS_WEIGHT}')
+    IMG_LOSS_WEIGHT = float(os.environ.get('IMG_LOSS_WEIGHT', 3.0))
+    print(f'IMG_LOSS_WEIGHT {IMG_LOSS_WEIGHT}')
 
     kwargs['automodel_class'] = Qwen2_5_VLForConditionalGeneration
     model, tokenizer = get_model_tokenizer_multimodal(*args, **kwargs)

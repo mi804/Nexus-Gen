@@ -12,7 +12,8 @@ from swift.llm.template.utils import Context, findall
 
 class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
     TRAIN_HEIGHT = int(os.environ.get('IMAGE_TRAIN_SIZE', 252))
-    TOKEN_LOSS_WIGHT = float(os.environ.get('TOKEN_LOSS_WIGHT', 0.1))
+    TOKEN_LOSS_WEIGHT = float(os.environ.get('TOKEN_LOSS_WEIGHT', 3.0))
+    IMG_LOSS_WEIGHT = float(os.environ.get('IMG_LOSS_WEIGHT', 3.0))
     USE_IMG_EMBED_AS_INPUT = os.environ.get('USE_IMG_EMBED_AS_INPUT', 'False').lower() == 'true'
     USE_DYNAMIC_RATIO = os.environ.get('USE_DYNAMIC_RATIO', 'False').lower() == 'true'
     CONSISTANT_EDIT_SCALE = os.environ.get('CONSISTANT_EDIT_SCALE', 'False').lower() == 'true'
@@ -114,7 +115,8 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
 
     def _post_encode(self, model, inputs: Dict[str, Any]) -> Dict[str, Any]:
         use_img_embed_as_input = self.USE_IMG_EMBED_AS_INPUT
-        token_loss_weight = self.TOKEN_LOSS_WIGHT
+        token_loss_weight = self.TOKEN_LOSS_WEIGHT
+        img_loss_weight = self.IMG_LOSS_WEIGHT
 
         if not self.is_training:
             return inputs
@@ -131,7 +133,7 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
         inputs_embeds = _model.embed_tokens(input_ids)
 
         dtype = model.visual.get_dtype() if self.version == 'v2' else model.visual.dtype
-        input_dict = {'token_loss_weight': token_loss_weight, 'image_embeddings': None}
+        input_dict = {'token_loss_weight': token_loss_weight, 'image_embeddings': None, 'img_loss_weight': img_loss_weight}
         if pixel_values is None and pixel_values_videos is None:  # plain-text
             if is_deepspeed_enabled():
                 from PIL import Image
@@ -142,6 +144,12 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
                 pixel_values = media_inputs['pixel_values'].type(dtype)
                 image_embeds = model.visual(pixel_values, grid_thw=media_inputs['image_grid_thw'])
                 inputs_embeds += image_embeds.mean() * 0.
+
+                num_embeddings = model.image_prefill_embeds.num_embeddings
+                image_prefill_embeds = model.image_prefill_embeds(
+                    torch.arange(num_embeddings, device=inputs_embeds.device).long()
+                )
+                inputs_embeds = inputs_embeds + image_prefill_embeds.mean() * 0.
         else:
             if pixel_values is not None:
                 pixel_values = pixel_values.type(dtype)
@@ -160,6 +168,17 @@ class Qwen2_5VL_All2AllTemplate(Qwen2_5VLTemplate):
                     # exclude image embeddings from input embeddings
                     image_embeds_labels = expanded_image_embeds.masked_select(excluded_mask).view(-1, image_embeds.size(-1))
                     input_dict.update({'image_embeddings': image_embeds_labels.clone().detach()}) # TODO: may not need detach
+                    # get prefill image embeddings
+                    num_embeddings = model.image_prefill_embeds.num_embeddings
+                    image_prefill_embeds = model.image_prefill_embeds(
+                        torch.arange(num_embeddings, device=inputs_embeds.device).long()
+                    )
+                    num_repeats = image_embeds_labels.size(0) // num_embeddings
+                    image_prefill_embeds = image_prefill_embeds.repeat(num_repeats, 1)
+                    assert image_prefill_embeds.size(0) == image_embeds_labels.size(0)
+                    # replace output image embeddings with prefill image embeddings
+                    inputs_embeds.masked_scatter_(excluded_mask, image_prefill_embeds)
+                    # replace input image embeddings with image embeddings
                     inputs_embeds = inputs_embeds * (1 - image_mask) + expanded_image_embeds * image_mask
                 else:
                     inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)
