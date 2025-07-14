@@ -15,21 +15,21 @@
 </div>
 
 ## News
-- **July 11, 2025**: [Nexus-Gen V2](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2) is released, which is opitimized from the following aspects:
-  - Better image understanding capbility (45.7 on [MMMU](https://github.com/MMMU-Benchmark/MMMU)) through optimization on training schedules.
-  - Better image generation (0.81 on [GenEval](https://github.com/djghosh13/geneval.git)) robustness through training with long-short caption.
+- **July 11, 2025**: **[Nexus-Gen V2](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2) is released**. Please check more details in the [technical report](http://arxiv.org/abs/2504.21356). The model is opitimized from the following aspects:
+  - Better image understanding capbility (**45.7 on [MMMU](https://github.com/MMMU-Benchmark/MMMU)**) through optimization on training schedules.
+  - Better image generation (**0.81 on [GenEval](https://github.com/djghosh13/geneval.git)**) robustness through training with long-short caption.
   - Better reconstruction in image editing tasks. We have proposed a better editing decoder for Nexus-Gen.
   - Support generation and editing with Chinese prompts.
 - **May 27, 2025**: We fine-tuned Nexus-Gen using the [BLIP-3o-60k](https://huggingface.co/datasets/BLIP3o/BLIP3o-60k) dataset, significantly improving the model's robustness to text prompts in image generation, **achieving a GenEval score of 0.79**. The [model checkpoints](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-Gen) have been updated.
 
 ## What is Nexus-Gen
-Nexus-Gen is a unified model that synergizes the language reasoning capabilities of LLMs with the image synthesis power of diffusion models. We propose a unified image embedding spaces to model image understanding, generation and editing tasks. To jointly optimize Nexus-Gen across these tasks, we propose a multi-stage training strategy, which perform multitask pretraining on the autoregressive model and conditional adaption on the vision decoders.
+Nexus-Gen is a unified model that synergizes the language reasoning capabilities of LLMs with the image synthesis power of diffusion models. We propose a unified image embedding spaces to model image understanding, generation and editing tasks. To perform joint optimization across multiple tasks, we curate a large-scale dataset of 26.3 million samples and train Nexus-Gen using a multi-stage strategy, which includes the multi-task pretraining of the autoregressive model and conditional adaptations of the generation and editing decoders. 
 ing, generation and editing tasks.
 
 ![architecture](assets/illustrations/architecture.jpg)
 
 
-## Getting Started
+## Model Inference
 ### Installation
 ```shell
 # 1. Install [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio.git) from source
@@ -88,7 +88,7 @@ Try Nexus-Gen with a gradio UI:
 python app.py
 ```
 
-## Training
+## Model training
 Nexus-Gen is trained base on [ms-swift](https://github.com/modelscope/ms-swift.git) and [DiffSynth-Studio](https://github.com/modelscope/DiffSynth-Studio.git). You can find the training scripts in `train/scripts/train_decoder.sh` and `train_llm.sh`.
 
 ## Qualitative results of Nexus-Gen
