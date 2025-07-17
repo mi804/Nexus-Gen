@@ -3,19 +3,19 @@
     <img src="assets/logo.jpg"/>
     <br>
 <p>
-<h1 align="center">Nexus-Gen: A Unified Model for Image Understanding, Generation, and Editing</h1>
+<h1 align="center">Nexus-Gen: Unified Image Understanding, Generation, and Editing via Prefilled Autoregression in Shared Embedding Space</h1>
  
 <div align="center">
 
   <a href="http://arxiv.org/abs/2504.21356"><img src="https://img.shields.io/static/v1?label=Tech%20Report&message=Arxiv&color=red"></a> &ensp;
-  <a href="https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Model&message=ModelScope&color=blue"></a> &ensp;
-  <a href="https://huggingface.co/modelscope/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Model&message=HuggingFace&color=yellow"></a> &ensp;
+  <a href="https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2"><img src="https://img.shields.io/static/v1?label=Model&message=ModelScope&color=blue"></a> &ensp;
+  <a href="https://huggingface.co/modelscope/Nexus-GenV2"><img src="https://img.shields.io/static/v1?label=Model&message=HuggingFace&color=yellow"></a> &ensp;
   <a href="https://www.modelscope.cn/studios/DiffSynth-Studio/Nexus-Gen"><img src="https://img.shields.io/static/v1?label=Online%20Demo&message=ModeScope&color=green"></a> &ensp;
 
 </div>
 
 ## News
-- **July 11, 2025**: **[Nexus-Gen V2](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2) is released**. [Technical report](http://arxiv.org/abs/2504.21356) will be updated soonly. The model is opitimized from the following aspects:
+- **July 11, 2025**: **[Nexus-Gen V2](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2) is released**. [Technical report](http://arxiv.org/abs/2504.21356) has been updated. Compared to the previous version, the model is opitimized from the following aspects:
   - Better image understanding capbility (**45.7 on [MMMU](https://github.com/MMMU-Benchmark/MMMU)**) through optimization on training schedules.
   - Better image generation (**0.81 on [GenEval](https://github.com/djghosh13/geneval.git)**) robustness through training with long-short caption.
   - Better reconstruction in image editing tasks. We have proposed a better editing decoder for Nexus-Gen.
@@ -144,13 +144,13 @@ To be published.
 
 ### Citation
 ```
-@misc{zhang2025nexusgenunifiedmodelimage,
-      title={Nexus-Gen: A Unified Model for Image Understanding, Generation, and Editing}, 
+{zhang2025nexusgenunifiedimageunderstanding,
+      title={Nexus-Gen: Unified Image Understanding, Generation, and Editing via Prefilled Autoregression in Shared Embedding Space}, 
       author={Hong Zhang and Zhongjie Duan and Xingjun Wang and Yuze Zhao and Weiyi Lu and Zhipeng Di and Yixuan Xu and Yingda Chen and Yu Zhang},
       year={2025},
       eprint={2504.21356},
       archivePrefix={arXiv},
       primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2504.21356v2}, 
+      url={https://arxiv.org/abs/2504.21356}, 
 }
 ```
