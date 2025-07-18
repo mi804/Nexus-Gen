@@ -15,7 +15,7 @@
 </div>
 
 ## News
-- **July 11, 2025**: **[Nexus-Gen V2](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2) is released**. [Technical report](http://arxiv.org/abs/2504.21356) has been updated. Compared to the previous version, the model is opitimized from the following aspects:
+- **July 11, 2025**: **[Nexus-Gen V2](https://www.modelscope.cn/models/DiffSynth-Studio/Nexus-GenV2) is released**. Please refer to [Technical report](http://arxiv.org/abs/2504.21356) for more details. Compared to the previous version, the model is opitimized from the following aspects:
   - Better image understanding capbility (**45.7 on [MMMU](https://github.com/MMMU-Benchmark/MMMU)**) through optimization on training schedules.
   - Better image generation (**0.81 on [GenEval](https://github.com/djghosh13/geneval.git)**) robustness through training with long-short caption.
   - Better reconstruction in image editing tasks. We have proposed a better editing decoder for Nexus-Gen.
@@ -144,7 +144,7 @@ To be published.
 
 ### Citation
 ```
-{zhang2025nexusgenunifiedimageunderstanding,
+@misc{zhang2025nexusgenunifiedimageunderstanding,
       title={Nexus-Gen: Unified Image Understanding, Generation, and Editing via Prefilled Autoregression in Shared Embedding Space}, 
       author={Hong Zhang and Zhongjie Duan and Xingjun Wang and Yuze Zhao and Weiyi Lu and Zhipeng Di and Yixuan Xu and Yingda Chen and Yu Zhang},
       year={2025},
