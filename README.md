@@ -55,7 +55,7 @@ python image_understanding.py --input_image assets/examples/cat.png --instructio
 ```
 
 ### Image Generation
-Try the following scripts to perform image generation (Needs at least 24 GB VRAM). Please see `image_generation.py` for details about the inference hyperparameters.
+Try the following scripts to perform image generation (Needs at least 24 GB VRAM). You may perfrom fp8 quantization of the DiT by setting args `--fp8_quantization` for extreme memory saving. Please see `image_generation.py` for details about the inference hyperparameters.
 ```shell
 python image_generation.py --prompt "A cute cat" --width 512 --height 512
 ```
@@ -80,7 +80,8 @@ Nexus-Gen also supports image editing using Chinese prompts:
 ```shell
 python image_editing.py --input_image assets/examples/cat.png  --instruction "给猫加一副太阳镜"
 ```
-Please see `image_editing.py` for details about the inference hyperparameters.
+
+You may perfrom fp8 quantization of the DiT by setting args `--fp8_quantization` for extreme memory saving. Please see `image_editing.py` for details about the inference hyperparameters.
 ### Gradio demo
 Try Nexus-Gen with a gradio UI:
 ```shell

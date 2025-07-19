@@ -49,6 +49,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--device", type=str, default='cuda:0', help="Device to use (e.g., 'cuda:0', 'cpu')")
     parser.add_argument("--enable_cpu_offload", default=True, action='store_true', help="Enable CPU offloading for memory optimization")
+    parser.add_argument("--fp8_quantization", default=False, action='store_true', help="Enable FP8 quantization of the decoder for memory optimization")
     parser.add_argument("--result_path", type=str, default='edit_result.png', help="Path to save edited image")
 
     return parser.parse_args()
@@ -103,7 +104,8 @@ if __name__ == '__main__':
             args.generation_decoder_path, 
             args.flux_path, 
             device=args.device, 
-            enable_cpu_offload=args.enable_cpu_offload
+            enable_cpu_offload=args.enable_cpu_offload,
+            fp8_quantization=args.fp8_quantization
         )
 
         image = flux_decoder.decode_image_embeds(
@@ -132,7 +134,8 @@ if __name__ == '__main__':
             args.flux_path, 
             args.ckpt_path, 
             device=args.device,
-            enable_cpu_offload=args.enable_cpu_offload
+            enable_cpu_offload=args.enable_cpu_offload,
+            fp8_quantization=args.fp8_quantization
         )
         image = flux_decoder.decode_image_embeds(
             output_image_embeddings, 

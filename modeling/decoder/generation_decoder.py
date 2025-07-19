@@ -19,10 +19,11 @@ def state_dict_converter():
 
 class NexusGenGenerationDecoder:
 
-    def __init__(self, decoder_path, flux_path, device='cuda', torch_dtype=torch.bfloat16, enable_cpu_offload=False):
+    def __init__(self, decoder_path, flux_path, device='cuda', torch_dtype=torch.bfloat16, enable_cpu_offload=False, fp8_quantization=False):
         self.device = device
         self.torch_dtype = torch_dtype
         self.enable_cpu_offload = enable_cpu_offload
+        self.fp8_quantization = fp8_quantization
         self.pipe, self.adapter = self.get_pipe(decoder_path, flux_path, device, torch_dtype)
 
     def get_pipe(self, decoder_path, flux_path, device="cuda", torch_dtype=torch.bfloat16):
@@ -49,10 +50,14 @@ class NexusGenGenerationDecoder:
 
         FluxDiT.state_dict_converter = staticmethod(state_dict_converter)
         model_manager.load_model_from_single_file(decoder_path, state_dict=dit_state_dict, model_names=['flux_dit'], model_classes=[FluxDiT], model_resource='diffusers')
+        dit_torch_dtype = torch_dtype if not self.fp8_quantization else torch.float8_e4m3fn
+        model_manager.model[-1].to(device, dtype=dit_torch_dtype)
 
         pipe = NexusGenGenerationPipeline.from_model_manager(model_manager, device=device)
         if self.enable_cpu_offload:
             pipe.enable_cpu_offload()
+        if self.fp8_quantization:
+            pipe.dit.quantize()
 
         return pipe, adapter
 
